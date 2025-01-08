@@ -1,4 +1,4 @@
-package com.example.app;
+package com.parnerta.mitraoi;
 
 import com.getcapacitor.BridgeActivity;
 

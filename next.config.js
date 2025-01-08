@@ -12,6 +12,7 @@ module.exports = {
     unoptimized: true,
   },
   output: 'export',
+  trailingSlash: true, // Add this for better static hosting compatibility
   swcMinify: true,
   transpilePackages: [
     '@ionic/react',

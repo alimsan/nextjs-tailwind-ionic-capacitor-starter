@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { add } from 'ionicons/icons';
-import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import {
   IonBackButton,
@@ -22,7 +20,6 @@ import {
   IonInput,
   IonTextarea,
   IonSkeletonText,
-  IonIcon,
 } from '@ionic/react';
 import { useParams } from 'react-router-dom';
 
@@ -44,58 +41,7 @@ interface ApiResponse {
 type ListDetailParams = {
   listId: string;
 };
-const resizeImage = async (file: File, maxWidth: number, maxHeight: number): Promise<Blob> => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
 
-        // Calculate new dimensions while maintaining aspect ratio
-        if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d')!;
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Convert to blob with reduced quality
-        canvas.toBlob(
-          (blob) => {
-            resolve(blob!);
-          },
-          'image/jpeg',
-          0.6  // Compression quality (0.6 = 60% quality)
-        );
-      };
-      img.src = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  });
-};
-const blobToBase64 = (blob: Blob): Promise<string> => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64String = (reader.result as string).split(',')[1];
-      resolve(base64String);
-    };
-    reader.readAsDataURL(blob);
-  });
-};
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -176,37 +122,16 @@ const ListItems = ({ id_kategori }: { id_kategori: string }) => {
     setShowEditModal(true);
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      try {
-        // Check initial file size (2.5MB = 2.5 * 1024 * 1024 bytes)
-        if (file.size <= 2.5 * 1024 * 1024) {
-          // If file is under 2.5MB, convert directly to base64
-          const reader = new FileReader();
-          reader.onload = () => {
-            const base64String = (reader.result as string).split(',')[1];
-            setImageBase64(base64String);
-            setEditData((prev) => prev ? { ...prev, foto: base64String } : null);
-          };
-          reader.readAsDataURL(file);
-        } else {
-          // If file is over 2.5MB, perform resize and compression
-          const optimizedBlob = await resizeImage(file, 1024, 1024);
-          
-          if (optimizedBlob.size > 2.5 * 2024 * 2024) { // 2.5MB final check
-            alert('Ukuran file masih terlalu besar setelah optimasi. Mohon gunakan gambar yang lebih kecil.');
-            return;
-          }
-
-          const base64String = await blobToBase64(optimizedBlob);
-          setImageBase64(base64String);
-          setEditData((prev) => prev ? { ...prev, foto: base64String } : null);
-        }
-      } catch (error) {
-        console.error('Error processing image:', error);
-        alert('Gagal memproses gambar. Silakan coba lagi.');
-      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64String = (reader.result as string).replace(/^data:image\/\w+;base64,/, "");
+        setImageBase64(base64String);
+        setEditData((prev) => prev ? { ...prev, foto: base64String } : null);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -364,10 +289,7 @@ const ListItems = ({ id_kategori }: { id_kategori: string }) => {
 const ListDetail= () => {
   const pathname = usePathname();
   const idkateg = pathname.split('/').pop()
-  const router = useRouter();
-  const handleAddMenu = () => {
-    router.push('/lists/add-makanan');
-  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -376,12 +298,6 @@ const ListDetail= () => {
             <IonBackButton defaultHref="/lists" />
           </IonButtons>
           <IonTitle>Daftar Menu</IonTitle>
-          <IonButtons slot="end">
-            <IonButton 
-            onClick={handleAddMenu}>
-              <IonIcon slot="icon-only" icon={add} />
-            </IonButton>
-          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent>
