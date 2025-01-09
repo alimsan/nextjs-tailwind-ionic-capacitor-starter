@@ -7,7 +7,6 @@ import {
   IonTitle,
   IonContent,
   IonButtons,
-  IonBackButton,
   IonButton,
   IonInput,
   IonTextarea,
@@ -15,16 +14,19 @@ import {
   IonItem,
   IonList,
   IonToast,
+  IonIcon,
 } from '@ionic/react';
+import { chevronBackOutline } from 'ionicons/icons';
 
 interface MakananForm {
   nama_menu: string;
   harga: number;
-  kategori_menu_makanan: number;
+  kategori_menu_makanan: string;
   deskripsi_menu: string;
   foto: string;
 }
-
+const MAX_RETRIES = 3;
+const TIMEOUT_MS = 10000;
 const resizeImage = async (file: File, maxWidth: number, maxHeight: number): Promise<Blob> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -79,16 +81,27 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
 
 const AddMakanan = () => {
   const router = useRouter();
+  const id_kategori = sessionStorage.getItem('id_kategori_makanan');
+
   const [formData, setFormData] = useState<MakananForm>({
     nama_menu: '',
     harga: 0,
-    kategori_menu_makanan: 223, // Default value as per your example
+    kategori_menu_makanan: id_kategori || '',
     deskripsi_menu: '',
     foto: '',
   });
+
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/lists");
+    }
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -122,34 +135,74 @@ const AddMakanan = () => {
   };
 
   const handleSubmit = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mitraresto/makanan/upcreate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
-      
-      if (result.status === 'success') {
-        setToastMessage('Menu berhasil ditambahkan');
-        setShowToast(true);
-        setTimeout(() => {
-          router.back();
-        }, 1500);
-      } else {
-        setToastMessage(result.message || 'Gagal menambahkan menu');
-        setShowToast(true);
-      }
-    } catch (error) {
-      setToastMessage('Terjadi kesalahan. Silakan coba lagi.');
+    // Validasi tetap sama
+    if (!formData.nama_menu.trim()) {
+      setToastMessage('Nama menu harus diisi');
       setShowToast(true);
-    } finally {
-      setIsLoading(false);
+      return;
     }
+  
+    if (formData.harga <= 0) {
+      setToastMessage('Harga harus lebih dari 0');
+      setShowToast(true);
+      return;
+    }
+    setIsLoading(true);
+    
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+        const sanitizedDesc = formData.deskripsi_menu?.trim() || '-';
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mitraresto/makanan/upcreate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...formData,
+            deskripsi_menu: sanitizedDesc,
+            harga: Number(formData.harga),
+          }),
+        });
+  
+        clearTimeout(timeoutId);
+  
+        // Tambahkan pengecekan status HTTP
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+  
+        // Cek Content-Type response
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Response bukan JSON!");
+        }
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          setToastMessage('Menu berhasil ditambahkan');
+          setShowToast(true);
+          setTimeout(() => router.back(), 1500);
+          return;
+        }
+        throw new Error(result.message || 'Server error');
+        
+      } catch (error) {
+        console.error(`Attempt ${attempt + 1} failed:`, error);
+        
+        // Tampilkan pesan error yang lebih spesifik
+        setToastMessage(error instanceof Error ? error.message : 'Kesalahan jaringan');
+        setShowToast(true);
+        
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        }
+      }
+    }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -157,7 +210,9 @@ const AddMakanan = () => {
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonBackButton defaultHref="/lists" />
+            <IonButton onClick={handleBack}>
+              <IonIcon icon={chevronBackOutline} />
+            </IonButton>
           </IonButtons>
           <IonTitle>Tambah Menu</IonTitle>
         </IonToolbar>
@@ -168,7 +223,7 @@ const AddMakanan = () => {
             <IonLabel position="stacked">Nama Menu</IonLabel>
             <IonInput
               value={formData.nama_menu}
-              onIonChange={e => setFormData(prev => ({ ...prev, nama_menu: e.detail.value! }))}
+              onIonChange={e => setFormData(prev => ({ ...prev, nama_menu: e.detail.value || '' }))}
               placeholder="Masukkan nama menu"
               className="mt-1"
             />
@@ -179,7 +234,10 @@ const AddMakanan = () => {
             <IonInput
               type="number"
               value={formData.harga}
-              onIonChange={e => setFormData(prev => ({ ...prev, harga: parseInt(e.detail.value!, 10) }))}
+              onIonChange={e => setFormData(prev => ({ 
+                ...prev, 
+                harga: e.detail.value ? Number(e.detail.value) : 0 
+              }))}
               placeholder="Masukkan harga"
               className="mt-1"
             />
@@ -189,7 +247,13 @@ const AddMakanan = () => {
             <IonLabel position="stacked">Deskripsi Menu</IonLabel>
             <IonTextarea
               value={formData.deskripsi_menu}
-              onIonChange={e => setFormData(prev => ({ ...prev, deskripsi_menu: e.detail.value! }))}
+              onIonChange={e => {
+                const value = e.detail.value || '';
+                setFormData(prev => ({
+                  ...prev,
+                  deskripsi_menu: value
+                }));
+              }}
               placeholder="Masukkan deskripsi menu"
               className="mt-1"
             />
@@ -210,6 +274,7 @@ const AddMakanan = () => {
               expand="block"
               onClick={handleSubmit}
               disabled={isLoading}
+              className="mt-2"
             >
               {isLoading ? 'Menyimpan...' : 'Simpan Menu'}
             </IonButton>

@@ -148,28 +148,25 @@ const ListItems = ({ id_kategori }: { id_kategori: string }) => {
 
   useEffect(() => {
     const fetchMakanan = async () => {
-      // Only fetch if id_kategori is a number
-      if (!isNaN(Number(id_kategori))) {
-        try {
-          const response = await fetch(`${apiUrl}/api/mitraresto/makanan/kategori?id_kategori_makanan=${id_kategori}`);
-          const data: ApiResponse = await response.json();
-  
-          if (data.status === 'success') {
-            setMakanan(data.data);
-          } else {
-            setError(data.message);
-          }
-        } catch (error) {
-          setError('Gagal memuat daftar makanan');
-          console.error('Error:', error);
-        } finally {
-          setIsLoading(false);
+      try {
+        const response = await fetch(`${apiUrl}/api/mitraresto/makanan/kategori?id_kategori_makanan=${id_kategori}`);
+        const data: ApiResponse = await response.json();
+
+        if (data.status === 'success') {
+          setMakanan(data.data);
+        } else {
+          setError(data.message);
         }
+      } catch (error) {
+        setError('Gagal memuat daftar makanan');
+        console.error('Error:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
-  
+
     fetchMakanan();
-  }, [id_kategori, apiUrl]);
+  }, [id_kategori]);
 
   const handleChange = (field: string, value: any) => {
     console.log(`Updating ${field} with value:`, value); // Debug log
@@ -270,7 +267,7 @@ const ListItems = ({ id_kategori }: { id_kategori: string }) => {
 
       if (result.status === 'success') {
         setMakanan(prev =>
-          prev.map(item => (item.id === editData.id ? { ...item, ...result.data } : item))
+          prev.map(item => (item.id === editData.id ? { ...item, ...formData } : item))
         );
         setShowEditModal(false);
         setImageBase64(null);

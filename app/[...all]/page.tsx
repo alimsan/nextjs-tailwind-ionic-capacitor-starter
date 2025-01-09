@@ -11,9 +11,9 @@ export async function generateStaticParams() {
     { all: ['otplogin'] },
     { all: ['validation-otp'] },
     { all: ['feed'] },
+    { all: ['add-makanan'] },
     { all: ['lists'] },
     ...lists.map(list => ({ all: ['lists', list.id] })),
-    { all: ['lists', 'add-makanan'] },
     { all: ['settings'] },
   ];
 }

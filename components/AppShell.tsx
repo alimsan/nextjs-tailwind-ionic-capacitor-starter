@@ -60,8 +60,8 @@ const AppShell = () => {
             <Switch>
               <Route path="/feed" component={Tabs} />
               <Route path="/lists" component={Tabs} />
+              <Route path="/add-makanan" component={AddMakanan} />
               <Route path="/lists/:listId" component={Tabs} />
-              <Route path="/lists/add-makanan" component={Tabs} />
               <Route path="/settings" component={Tabs} />
               <Redirect from="/" to="/feed" exact />
               <Redirect from="/login" to="/feed" />

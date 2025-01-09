@@ -111,12 +111,14 @@ const Settings = () => {
           duration={2000}
         />
       </IonContent>
-      <IonFooter>
+      <IonFooter
+      
+      >
             <IonButton
               expand="block"
               color="danger"
               onClick={handleLogout}
-              className="w-full"
+              className="w-full mb-4"
               disabled={loading}
             >
               {loading ? 'Memproses...' : 'Logout'}

@@ -19,6 +19,7 @@ import { close } from 'ionicons/icons';
 interface Transaction {
   id_transaksi: number;
   biaya_akhir: number;
+  harga_akhir: number;
   jarak: number;
   alamat_asal: string;
   alamat_tujuan: string;
@@ -41,6 +42,9 @@ interface ApiResponse {
   last_page: number;
   totalMenu: number;
   totalKategoriMenu: number;
+  totalSuksesValue: number;
+  totalCancel: number;
+  percentage: string;
 }
 
 type Restoran = {
@@ -61,6 +65,9 @@ const TransactionTable = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [totalMenu, setTotalMenu] = useState(0);
   const [totalKategoriMenu, setTotalKategoriMenu] = useState(0);
+  const [totalValue, setTotalValue] = useState(0);
+  const [totalCancelable, setTotalCancelable] = useState(0);
+  const [totalPersen, setTotalPersen] = useState(0);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const db = new PouchDB('user_database');
@@ -79,6 +86,9 @@ const TransactionTable = () => {
       setCurrentPage(data.current_page);
       setTotalMenu(data.totalMenu);
       setTotalKategoriMenu(data.totalKategoriMenu);
+      setTotalValue(data.totalSuksesValue);
+      setTotalCancelable(data.totalCancel);
+      setTotalPersen(Number(data.percentage));
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -144,14 +154,40 @@ const TransactionTable = () => {
           </IonCol>
         </IonRow>
       </IonGrid>
-
+      <IonGrid>
+        <IonRow>
+          <IonCol>
+            <IonCard className="text-center">
+              <IonCardContent>
+                <div className="text-xl font-bold text-primary">{totalValue}</div>
+                <div className="text-sm text-gray-500">Sukses Value</div>
+              </IonCardContent>
+            </IonCard>
+          </IonCol>
+          <IonCol>
+            <IonCard className="text-center">
+              <IonCardContent>
+                <div className="text-xl font-bold text-primary">{totalCancelable}</div>
+                <div className="text-sm text-gray-500">Cancelable</div>
+              </IonCardContent>
+            </IonCard>
+          </IonCol>
+          <IonCol>
+            <IonCard className="text-center">
+              <IonCardContent>
+                <div className="text-sm font-bold text-primary">{totalPersen}%</div>
+                <div className="text-sm text-gray-500">Persen </div>
+              </IonCardContent>
+            </IonCard>
+          </IonCol>
+        </IonRow>
+      </IonGrid>
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
           <thead className="text-sm text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-800">
             <tr>
               <th className="py-3 px-6">ID Transaksi</th>
-              <th className="py-3 px-6">Biaya Akhir</th>
-              <th className="py-3 px-6">Jarak (KM)</th>
+              <th className="py-3 px-6">Nilai Akhir</th>
               <th className="py-3 px-6">Alamat Asal</th>
               <th className="py-3 px-6">Alamat Tujuan</th>
               <th className="py-3 px-6">Status</th>
@@ -165,10 +201,13 @@ const TransactionTable = () => {
                 onClick={() => handleRowClick(transaction)}
               >
                 <td className="py-3 px-6">{transaction.id_transaksi}</td>
-                <td className="py-3 px-6">Rp {transaction.biaya_akhir.toLocaleString()}</td>
-                <td className="py-3 px-6">{transaction.jarak.toFixed(2)}</td>
-                <td className="py-3 px-6 truncate max-w-xs">{transaction.alamat_asal}</td>
-                <td className="py-3 px-6 truncate max-w-xs">{transaction.alamat_tujuan}</td>
+                <td className="py-3 px-6">Rp {transaction.harga_akhir.toLocaleString()}</td>
+                <td className="py-3 px-6 max-w-xs truncate overflow-hidden whitespace-nowrap">
+                  {transaction.alamat_asal}
+                </td>
+                <td className="py-3 px-6 max-w-xs truncate overflow-hidden whitespace-nowrap">
+                  {transaction.alamat_tujuan}
+                </td>
                 <td className="py-3 px-6">{getStatusLabel(transaction.status)}</td>
               </tr>
             ))}
@@ -215,8 +254,8 @@ const TransactionTable = () => {
                   <p>{getStatusLabel(selectedTransaction.status)}</p>
                 </div>
                 <div>
-                  <h3 className="font-semibold">Biaya Akhir</h3>
-                  <p>Rp {selectedTransaction.biaya_akhir.toLocaleString()}</p>
+                  <h3 className="font-semibold">Belanja Akhir</h3>
+                  <p>Rp {selectedTransaction.harga_akhir.toLocaleString()}</p>
                 </div>
                 <div>
                   <h3 className="font-semibold">Jarak</h3>

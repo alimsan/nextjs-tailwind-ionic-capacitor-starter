@@ -14,7 +14,6 @@ import Lists from './Lists';
 import ListDetail from './ListDetail';
 import Settings from './Settings';
 import LoginPage from './Login';
-import AddMakanan from './AddMakanan';
 
 const Tabs = () => {
   return (
@@ -22,13 +21,7 @@ const Tabs = () => {
       <IonRouterOutlet>
         <Route path="/feed" render={() => <Home />} exact={true} />
         <Route path="/lists" render={() => <Lists />} exact={true} />
-        <Route
-          path="/lists/:listId"
-          render={() => <ListDetail />}
-          //render={({ match }) => <ListDetail makanan={match.params.listId} />}
-          exact={true}
-        />
-        <Route path="/lists/add-makanan" render={() => <AddMakanan />} exact={true} />
+        <Route path="/lists/:listId" render={() => <ListDetail />} exact={true} />
         <Route path="/settings" render={() => <Settings />} exact={true} />
         <Route path="/login" render={() => <LoginPage />} exact={true} />
         <Route path="" render={() => <Redirect to="/feed" />} exact={true} />

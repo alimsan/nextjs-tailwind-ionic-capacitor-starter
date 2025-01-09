@@ -18,7 +18,7 @@ import {
   IonInput,
   IonText,
 } from '@ionic/react';
-import { pencil, trash } from 'ionicons/icons';
+import { pencil, trash, add } from 'ionicons/icons';
 import { useRouter } from 'next/navigation';
 
 interface KategoriMenu {
@@ -326,11 +326,43 @@ const AllLists = () => {
 };
 
 const Lists = () => {
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const db = new PouchDB('user_database');
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  const handleCreate = async (data: { id_restoran: string; menu_makanan: string }) => {
+    try {
+      const restoran = await db.get<Restoran>('restoran');
+      const formData = new FormData();
+      formData.append('id_restoran', restoran.id_resto);
+      formData.append('menu_makanan', data.menu_makanan);
+
+      const response = await fetch(`${apiUrl}/api/mitraresto/menumakanan/upcreate`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        // Refresh halaman atau update state
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Gagal menambah kategori menu:', error);
+    }
+  };
+
   return (
     <IonPage>
       <IonHeader translucent={true}>
         <IonToolbar>
           <IonTitle>Kategori Menu</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={() => setShowCreateModal(true)}>
+              <IonIcon slot="icon-only" icon={add} />
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen={true}>
@@ -343,6 +375,13 @@ const Lists = () => {
           <AllLists />
         </IonList>
       </IonContent>
+
+      <EditModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSave={handleCreate}
+        initialData={null}
+      />
     </IonPage>
   );
 };
